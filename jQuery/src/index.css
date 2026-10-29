@@ -1,4 +1,32 @@
 .demo-container {
-    margin: 50px;
-    width: 90vw;
+    width: min(calc(100% - 32px), 740px);
+    margin: 24px auto;
+}
+
+#grid-container {
+    height: 440px;
+}
+
+.options {
+  padding: 20px;
+  margin-top: 20px;
+  background-color: rgba(191, 191, 191, 0.15);
+}
+
+.caption {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.option {
+  margin-top: 10px;
+}
+
+.option > span {
+  margin-right: 10px;
+}
+
+.option > .dx-tagbox, .option > .dx-numberbox {
+  display: inline-block;
+  vertical-align: middle;
 }
