@@ -1,6 +1,5 @@
 $(() => {
   const url = 'https://js.devexpress.com/Demos/Mvc/api/DataGridWebApi';
-  let orders;
   let maxUndoSteps = 50;
   let undoTypes = ['delete', 'add', 'edit'];
   let previousChanges = [];
@@ -93,49 +92,16 @@ $(() => {
     }
   }
 
-  function sendRequest(path, method, data) {
-    return $.ajax({
-      url: `${url}/${path}`,
-      method,
-      data,
-      xhrFields: { withCredentials: true },
-    });
-  }
-
-  const store = new DevExpress.data.CustomStore({
+  const store = DevExpress.data.AspNet.createStore({
     key: 'OrderID',
     loadMode: 'raw',
-    load() {
-      if (orders) {
-        return $.Deferred().resolve(orders).promise();
-      }
-      return sendRequest('Orders', 'GET', { skip: 700 })
-        .then((result) => {
-          orders = result.data;
-          return orders;
-        });
-    },
-    insert(values) {
-      return sendRequest('InsertOrder', 'POST', { values: JSON.stringify(values) })
-        .then((data) => {
-          orders = DevExpress.data.applyChanges(orders, [{ type: 'insert', data }], { keyExpr: 'OrderID' });
-          return data;
-        });
-    },
-    update(key, values) {
-      return sendRequest('UpdateOrder', 'PUT', { key, values: JSON.stringify(values) })
-        .then((data) => {
-          const change = { type: 'update', key, data: { ...values, ...data } };
-          orders = DevExpress.data.applyChanges(orders, [change], { keyExpr: 'OrderID' });
-          return data;
-        });
-    },
-    remove(key) {
-      return sendRequest('DeleteOrder', 'DELETE', { key })
-        .then((data) => {
-          orders = DevExpress.data.applyChanges(orders, [{ type: 'remove', key }], { keyExpr: 'OrderID' });
-          return data;
-        });
+    loadUrl: `${url}/Orders`,
+    loadParams: { skip: 700 },
+    insertUrl: `${url}/InsertOrder`,
+    updateUrl: `${url}/UpdateOrder`,
+    deleteUrl: `${url}/DeleteOrder`,
+    onBeforeSend(operation, ajaxOptions) {
+      ajaxOptions.xhrFields = { withCredentials: true };
     },
   });
 
