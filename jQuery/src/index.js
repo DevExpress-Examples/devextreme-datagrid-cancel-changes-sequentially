@@ -32,7 +32,7 @@ $(() => {
       || (!after && before?.type === 'insert')) {
       return 'delete';
     }
-    if (after?.type === 'insert' && !before) {
+    if (after?.type === 'insert') {
       return 'add';
     }
     return 'edit';
@@ -105,7 +105,15 @@ $(() => {
     },
   });
 
-  $('#grid-container').dxDataGrid({
+  function handleUndoKeyDown(event) {
+    if (event.ctrlKey && !event.shiftKey && !event.altKey
+      && event.key?.toLowerCase() === 'z') {
+      event.preventDefault();
+      undoLastChange(grid);
+    }
+  }
+
+  const grid = $('#grid-container').dxDataGrid({
     dataSource: store,
     showBorders: true,
     repaintChangesOnly: true,
@@ -118,6 +126,12 @@ $(() => {
     },
     columns: [
       { dataField: 'OrderID', width: 110, allowEditing: false },
+      { 
+        dataField: 'OrderDate',
+        dataType: 'date',
+        width: 130,
+        validationRules: [{ type: 'required', message: 'Order Date is required.' }]
+      },
       {
         dataField: 'ShipName',
         width: 340,
@@ -131,6 +145,9 @@ $(() => {
         validationRules: [{ type: 'stringLength', max: 15, message: 'Ship Country must not exceed 15 characters.' }],
       },
     ],
+    onDisposing() {
+      document.removeEventListener('keydown', handleUndoKeyDown, true);
+    },
     onToolbarPreparing(e) {
       e.toolbarOptions.items = e.toolbarOptions.items.map((item) => {
         if (item.name === 'revertButton') {
@@ -163,11 +180,10 @@ $(() => {
     },
     onSaved() {
       resetChangesHistory();
-    },
-    onEditCanceled() {
-      resetChangesHistory();
-    },
-  });
+    }
+  }).dxDataGrid('instance');
+
+  document.addEventListener('keydown', handleUndoKeyDown, true);
 
   $('#max-undo-steps').dxNumberBox({
     value: maxUndoSteps,

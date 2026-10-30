@@ -1,10 +1,9 @@
 .demo-container {
-    width: min(calc(100% - 32px), 740px);
-    margin: 24px auto;
+  margin: 24px auto;
 }
 
 #grid-container {
-    height: 440px;
+  height: 700px;
 }
 
 .options {
