@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "prestart": "npm run prebuild",
     "start": "vite",
     "prebuild": "devextreme-license --non-modular --out src/devextreme-license.js --force",
     "build": "npm run lint",

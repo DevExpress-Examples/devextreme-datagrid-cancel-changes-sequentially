@@ -1,22 +1,35 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>DevExtreme jQuery app</title>
+    <title>DataGrid - Cancel Changes One by One</title>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
     <link rel="icon" href="/favicon.ico" />
-    <link rel="stylesheet" type="text/css" href="../node_modules/devextreme-dist/css/dx.material.blue.light.compact.css" />
+    <link rel="stylesheet" type="text/css" href="../node_modules/devextreme-dist/css/dx.fluent.blue.light.css" />
     <link rel="stylesheet" type="text/css" href="index.css" />
   </head>
 
   <body class="dx-viewport">
     <script type="text/javascript" src="../node_modules/jquery/dist/jquery.js"></script>
     <script type="text/javascript" src="../node_modules/devextreme-dist/js/dx.all.js"></script>
+    <script type="text/javascript" src="../node_modules/devextreme-dist/js/dx.aspnet.data.js"></script>
     <script type="text/javascript" src="./devextreme-license.js"></script>
+    <script type="text/javascript" src="editHistoryHelper.js"></script>
     <script type="text/javascript" src="index.js"></script>
     <div class="demo-container">
-      <div id="btn"></div>
+      <div id="grid-container"></div>
+      <div class="options">
+        <div class="caption">Options</div>
+        <div class="option">
+          <span id="max-undo-label">Maximum undo steps</span>
+          <div id="max-undo-steps"></div>
+        </div>
+        <div class="option">
+          <span id="undo-types-label">Undo edit types</span>
+          <div id="undo-types"></div>
+        </div>
+      </div>
     </div>
   </body>
 </html>
