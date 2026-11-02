@@ -1,5 +1,6 @@
 $(() => {
   const url = 'https://js.devexpress.com/Demos/Mvc/api/DataGridWebApi';
+  const undoTypes = Object.values(DataChangeType);
   let undoButton;
   let clearHistoryButton;
 
@@ -7,7 +8,7 @@ $(() => {
   
   const changeHistoryHelper = new EditHistoryHelper({
     maxUndoSteps: 50,
-    undoTypes: ['delete', 'add', 'edit'],
+    undoTypes,
     onHistoryChanged: (historyLength) => {
       updateControlsState(historyLength, grid);
     },
@@ -155,8 +156,8 @@ $(() => {
 
   $('#undo-types').dxTagBox({
     width: 250,
-    items: ['delete', 'add', 'edit'],
-    value: ['delete', 'add', 'edit'],
+    items: undoTypes,
+    value: undoTypes,
     showSelectionControls: true,
     showSelectAll: true,
     showClearButton: true,

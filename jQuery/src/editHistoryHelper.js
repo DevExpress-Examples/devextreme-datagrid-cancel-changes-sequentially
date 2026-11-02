@@ -9,7 +9,7 @@ class EditHistoryHelper {
     this.changesHistory = [];
     this.previousChanges = [];
     this.maxUndoSteps = options.maxUndoSteps || 50;
-    this.undoTypes = options.undoTypes || ['delete', 'add', 'edit'];
+    this.undoTypes = options.undoTypes || Object.values(DataChangeType);
     this.isUndoing = false;
     this.onHistoryChanged = options.onHistoryChanged || (() => {});
   }
@@ -17,12 +17,12 @@ class EditHistoryHelper {
   getEditType(before, after) {
     if (after?.type === DataChangeType.REMOVE || before?.type === DataChangeType.REMOVE
       || (!after && before?.type === DataChangeType.INSERT)) {
-      return 'delete';
+      return DataChangeType.REMOVE;
     }
     if (after?.type === DataChangeType.INSERT) {
-      return 'add';
+      return DataChangeType.INSERT;
     }
-    return 'edit';
+    return DataChangeType.UPDATE;
   }
 
   getChangeKey(change) {
@@ -95,10 +95,13 @@ class EditHistoryHelper {
   }
 
   clearHistory(grid) {
-    this.changesHistory.length = 0;
-    this.previousChanges = [];
-    grid.option('editing.changes', []);
-    this.onHistoryChanged(0);
+    this.isUndoing = true;
+    try {
+      grid.option('editing.changes', []);
+    } finally {
+      this.isUndoing = false;
+      this.resetHistory();
+    }
   }
 
   resetHistory() {

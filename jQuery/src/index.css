@@ -1,12 +1,21 @@
+body {
+  margin: 0;
+}
+
 .demo-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - 48px);
   margin: 24px auto;
 }
 
 #grid-container {
-  height: 700px;
+  flex: 1;
+  min-height: 0;
 }
 
 .options {
+  flex-shrink: 0;
   padding: 20px;
   margin-top: 20px;
   background-color: rgba(191, 191, 191, 0.15);
