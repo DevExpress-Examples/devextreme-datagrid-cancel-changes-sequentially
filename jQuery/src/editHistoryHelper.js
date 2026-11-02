@@ -95,13 +95,8 @@ class EditHistoryHelper {
   }
 
   clearHistory(grid) {
-    this.isUndoing = true;
-    try {
-      grid.option('editing.changes', []);
-    } finally {
-      this.isUndoing = false;
-      this.resetHistory();
-    }
+    grid.option('editing.changes', []);
+    this.resetHistory();
   }
 
   resetHistory() {
