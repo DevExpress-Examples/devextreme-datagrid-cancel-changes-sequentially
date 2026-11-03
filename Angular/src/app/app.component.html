@@ -1,3 +1,73 @@
-<div class="default-style">
-  <dx-button [text]="buttonText" (onClick)="onClick($event)"></dx-button>
-</div>
+<main class="demo-container">
+  <dx-data-grid
+    [dataSource]="dataSource"
+    [showBorders]="true"
+    [repaintChangesOnly]="true"
+    (onInitialized)="onGridInitialized($event)"
+    (onToolbarPreparing)="onToolbarPreparing($event)"
+    (onOptionChanged)="onOptionChanged($event)"
+    (onSaved)="onSaved()"
+  >
+    <dxo-editing
+      mode="batch"
+      [allowAdding]="true"
+      [allowDeleting]="true"
+      [allowUpdating]="true"
+    ></dxo-editing>
+    <dxi-column
+      dataField="OrderID"
+      [width]="110"
+      [allowEditing]="false"
+    ></dxi-column>
+    <dxi-column
+      dataField="OrderDate"
+      dataType="date"
+      [width]="130"
+      [validationRules]="orderDateValidationRules"
+    ></dxi-column>
+    <dxi-column
+      dataField="ShipName"
+      [width]="340"
+      [editorOptions]="{ maxLength: 40 }"
+      [validationRules]="shipNameValidationRules"
+    ></dxi-column>
+    <dxi-column
+      dataField="ShipCountry"
+      [width]="220"
+      [editorOptions]="{ maxLength: 15 }"
+      [validationRules]="shipCountryValidationRules"
+    ></dxi-column>
+  </dx-data-grid>
+
+  <section class="options">
+    <div class="caption">Options</div>
+    <div class="option">
+      <label id="max-undo-label" for="max-undo-steps">Maximum undo steps</label>
+      <dx-number-box
+        id="max-undo-steps"
+        [value]="50"
+        [width]="120"
+        [min]="0"
+        [max]="1000"
+        [step]="1"
+        format="#0"
+        [showSpinButtons]="true"
+        [inputAttr]="{ 'aria-labelledby': 'max-undo-label' }"
+        (onValueChanged)="onMaxUndoStepsChanged($event)"
+      ></dx-number-box>
+    </div>
+    <div class="option">
+      <label id="undo-types-label" for="undo-types">Undo edit types</label>
+      <dx-tag-box
+        id="undo-types"
+        [width]="250"
+        [items]="undoTypes"
+        [value]="undoTypes"
+        [showSelectionControls]="true"
+        [showClearButton]="true"
+        [inputAttr]="{ 'aria-labelledby': 'undo-types-label' }"
+        (onValueChanged)="onUndoTypesChanged($event)"
+      ></dx-tag-box>
+    </div>
+  </section>
+</main>

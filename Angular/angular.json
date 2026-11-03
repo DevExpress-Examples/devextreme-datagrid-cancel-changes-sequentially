@@ -18,6 +18,7 @@
           "builder": "@angular/build:application",
           "options": {
             "allowedCommonJsDependencies": [
+              "devextreme-aspnet-data-nojquery",
               "devextreme-quill",
               "jszip",
               "devexpress-diagram",
@@ -37,7 +38,7 @@
               "src/assets"
             ],
             "styles": [
-              "node_modules/devextreme/dist/css/dx.material.blue.light.compact.css",
+              "node_modules/devextreme/dist/css/dx.fluent.blue.light.css",
               "src/styles.scss"
             ],
             "scripts": [],
