@@ -19,15 +19,7 @@ const apiUrl = 'https://js.devexpress.com/Demos/Mvc/api/DataGridWebApi';
 })
 export class AppComponent {
   readonly undoTypes = Object.values(DataChangeType);
-  readonly orderDateValidationRules = [
-    { type: 'required', message: 'Order Date is required.' },
-  ];
-  readonly shipNameValidationRules = [
-    { type: 'stringLength', max: 40, message: 'Ship Name must not exceed 40 characters.' },
-  ];
-  readonly shipCountryValidationRules = [
-    { type: 'stringLength', max: 15, message: 'Ship Country must not exceed 15 characters.' },
-  ];
+  readonly revertButtonOptions = { icon: 'trash' };
   readonly dataSource = createStore({
     key: 'OrderID',
     loadMode: 'raw',
@@ -46,10 +38,23 @@ export class AppComponent {
     undoTypes: this.undoTypes,
     onHistoryChanged: () => this.updateControlsState(),
   });
+  readonly undoButtonOptions: DxButtonTypes.Properties = {
+    icon: 'revert',
+    hint: 'Undo the last change',
+    elementAttr: { 'aria-label': 'Undo the last change' },
+    disabled: true,
+    onInitialized: (e) => {
+      this.undoButton = e.component;
+    },
+    onClick: () => {
+      if (this.grid) {
+        this.changeHistoryHelper.undoLastChange(this.grid);
+      }
+    },
+  };
 
   private grid?: DataGrid;
   private undoButton?: Button;
-  private clearHistoryButton?: Button;
   private previousUndoTypes = [...this.undoTypes];
 
   @HostListener('document:keydown', ['$event'])
@@ -67,51 +72,14 @@ export class AppComponent {
     this.updateControlsState();
   }
 
-  onToolbarPreparing(e: DxDataGridTypes.ToolbarPreparingEvent): void {
-    const toolbarItems = e.toolbarOptions.items ?? [];
-    e.toolbarOptions.items = toolbarItems.map((item) => {
-      if (typeof item !== 'string' && item.name === 'revertButton') {
-        return {
-          widget: 'dxButton',
-          location: item.location,
-          options: {
-            icon: 'revert',
-            hint: 'Undo the last change',
-            elementAttr: { 'aria-label': 'Undo the last change' },
-            disabled: this.changeHistoryHelper.getHistoryLength() === 0,
-            onInitialized: (args: DxButtonTypes.InitializedEvent) => {
-              this.undoButton = args.component;
-            },
-            onClick: () => {
-              this.changeHistoryHelper.undoLastChange(e.component);
-            },
-          },
-        };
-      }
-      return item;
-    });
-
-    e.toolbarOptions.items.push({
-      widget: 'dxButton',
-      location: 'after',
-      options: {
-        icon: 'trash',
-        hint: 'Clear all changes',
-        elementAttr: { 'aria-label': 'Clear all changes' },
-        disabled: !e.component.hasEditData(),
-        onInitialized: (args: DxButtonTypes.InitializedEvent) => {
-          this.clearHistoryButton = args.component;
-        },
-        onClick: () => {
-          this.changeHistoryHelper.clearHistory(e.component);
-        },
-      },
-    });
-  }
-
   onOptionChanged(e: DxDataGridTypes.OptionChangedEvent): void {
-    if (e.fullName === 'editing.changes' && Array.isArray(e.value)
-      && !this.changeHistoryHelper.isUndoInProgress()) {
+    if (e.fullName !== 'editing.changes' || !Array.isArray(e.value)
+      || this.changeHistoryHelper.isUndoInProgress()) {
+      return;
+    }
+    if (e.value.length === 0) {
+      this.changeHistoryHelper.resetHistory();
+    } else {
       this.changeHistoryHelper.recordChanges(e.value);
     }
   }
@@ -143,6 +111,5 @@ export class AppComponent {
 
   private updateControlsState(): void {
     this.undoButton?.option('disabled', this.changeHistoryHelper.getHistoryLength() === 0);
-    this.clearHistoryButton?.option('disabled', this.grid ? !this.grid.hasEditData() : true);
   }
 }

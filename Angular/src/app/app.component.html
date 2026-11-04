@@ -4,7 +4,6 @@
     [showBorders]="true"
     [repaintChangesOnly]="true"
     (onInitialized)="onGridInitialized($event)"
-    (onToolbarPreparing)="onToolbarPreparing($event)"
     (onOptionChanged)="onOptionChanged($event)"
     (onSaved)="onSaved()"
   >
@@ -14,29 +13,49 @@
       [allowDeleting]="true"
       [allowUpdating]="true"
     ></dxo-editing>
+    <dxo-toolbar>
+      <dxi-item name="addRowButton"></dxi-item>
+      <dxi-item name="saveButton"></dxi-item>      
+      <dxi-item
+        location="after"
+        widget="dxButton"
+        [options]="undoButtonOptions"
+      ></dxi-item>
+      <dxi-item name="revertButton" [options]="revertButtonOptions"></dxi-item>
+    </dxo-toolbar>
     <dxi-column
       dataField="OrderID"
       [width]="110"
       [allowEditing]="false"
     ></dxi-column>
-    <dxi-column
-      dataField="OrderDate"
-      dataType="date"
-      [width]="130"
-      [validationRules]="orderDateValidationRules"
-    ></dxi-column>
+    <dxi-column dataField="OrderDate" dataType="date" [width]="130">
+      <dxi-validation-rule
+        type="required"
+        message="Order Date is required."
+      ></dxi-validation-rule>
+    </dxi-column>
     <dxi-column
       dataField="ShipName"
       [width]="340"
       [editorOptions]="{ maxLength: 40 }"
-      [validationRules]="shipNameValidationRules"
-    ></dxi-column>
+    >
+      <dxi-validation-rule
+        type="stringLength"
+        [max]="40"
+        message="Ship Name must not exceed 40 characters."
+      ></dxi-validation-rule>
+    </dxi-column>
     <dxi-column
       dataField="ShipCountry"
       [width]="220"
       [editorOptions]="{ maxLength: 15 }"
-      [validationRules]="shipCountryValidationRules"
-    ></dxi-column>
+    >
+      <dxi-validation-rule
+        type="stringLength"
+        [max]="15"
+        message="Ship Country must not exceed 15 characters."
+      ></dxi-validation-rule>
+    </dxi-column>
   </dx-data-grid>
 
   <section class="options">
