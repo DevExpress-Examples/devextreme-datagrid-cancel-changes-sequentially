@@ -1,5 +1,5 @@
+import { useCallback, useRef, useState } from 'react';
 import type { DataChange, DataChangeType as ChangeType } from 'devextreme/common/grids';
-import type DataGrid from 'devextreme/ui/data_grid';
 
 export const DataChangeType = {
   INSERT: 'insert',
@@ -13,56 +13,45 @@ type HistoryStep = {
   type: ChangeType;
 };
 
-type EditHistoryOptions = {
-  maxUndoSteps?: number;
-  undoTypes?: ChangeType[];
-  onHistoryChanged?: (historyLength: number) => void;
+type UseEditHistoryOptions = {
+  maxUndoSteps: number;
+  undoTypes: ChangeType[];
 };
 
-export class EditHistoryHelper {
-  private changesHistory: HistoryStep[] = [];
+export function useEditHistory({ maxUndoSteps, undoTypes }: UseEditHistoryOptions) {
+  const [changes, setChanges] = useState<DataChange[]>([]);
+  const [historyLength, setHistoryLength] = useState(0);
+  const changesRef = useRef<DataChange[]>([]);
+  const historyRef = useRef<HistoryStep[]>([]);
+  const previousChangesRef = useRef<DataChange[]>([]);
+  const maxUndoStepsRef = useRef(maxUndoSteps);
+  const undoTypesRef = useRef(undoTypes);
 
-  private previousChanges: DataChange[] = [];
-
-  private maxUndoSteps: number;
-
-  private undoTypes: ChangeType[];
-
-  private isUndoing = false;
-
-  private readonly onHistoryChanged: (historyLength: number) => void;
-
-  constructor(options: EditHistoryOptions = {}) {
-    this.maxUndoSteps = options.maxUndoSteps ?? 50;
-    this.undoTypes = options.undoTypes ?? Object.values(DataChangeType);
-    this.onHistoryChanged = options.onHistoryChanged ?? function onHistoryChanged(): void {};
+  function cloneChanges(value: DataChange[]): DataChange[] {
+    return structuredClone(value);
   }
 
-  private getEditType(before?: DataChange, after?: DataChange): ChangeType {
-    if (after?.type === DataChangeType.REMOVE || before?.type === DataChangeType.REMOVE
-      || (!after && before?.type === DataChangeType.INSERT)) {
-      return DataChangeType.REMOVE;
-    }
-    if (after?.type === DataChangeType.INSERT) {
-      return DataChangeType.INSERT;
-    }
-    return DataChangeType.UPDATE;
-  }
-
-  private getChangeKey(change: DataChange): string | undefined {
+  function getChangeKey(change: DataChange): string | undefined {
     return JSON.stringify(change.key);
   }
 
-  private cloneChanges(changes: DataChange[]): DataChange[] {
-    return structuredClone(changes);
+  function updateChanges(value: DataChange[]): void {
+    changesRef.current = value;
+    setChanges(value);
   }
 
-  recordChanges(changes: DataChange[]): void {
-    const beforeByKey = new Map(this.previousChanges.map((change) => [
-      this.getChangeKey(change),
+  function resetHistory(): void {
+    historyRef.current = [];
+    previousChangesRef.current = [];
+    setHistoryLength(0);
+  }
+
+  function recordChanges(value: DataChange[]): void {
+    const beforeByKey = new Map(previousChangesRef.current.map((change) => [
+      getChangeKey(change),
       change,
     ]));
-    const afterByKey = new Map(changes.map((change) => [this.getChangeKey(change), change]));
+    const afterByKey = new Map(value.map((change) => [getChangeKey(change), change]));
     const keys = new Set([...beforeByKey.keys(), ...afterByKey.keys()]);
 
     keys.forEach((key) => {
@@ -72,80 +61,80 @@ export class EditHistoryHelper {
         return;
       }
 
-      const type = this.getEditType(before, after);
-      if (this.undoTypes.includes(type)) {
-        this.changesHistory.push({
+      let type: ChangeType;
+      if (after?.type === DataChangeType.REMOVE || before?.type === DataChangeType.REMOVE
+        || (!after && before?.type === DataChangeType.INSERT)) {
+        type = DataChangeType.REMOVE;
+      } else if (after?.type === DataChangeType.INSERT) {
+        type = DataChangeType.INSERT;
+      } else {
+        type = DataChangeType.UPDATE;
+      }
+
+      if (undoTypesRef.current.includes(type)) {
+        historyRef.current.push({
           key,
-          before: before && this.cloneChanges([before])[0],
+          before: before && cloneChanges([before])[0],
           type,
         });
       } else {
-        for (let index = this.changesHistory.length - 1; index >= 0; index -= 1) {
-          if (this.changesHistory[index].key === key) {
-            this.changesHistory.splice(index, 1);
-          }
-        }
+        historyRef.current = historyRef.current.filter((step) => step.key !== key);
       }
     });
 
-    this.changesHistory.splice(0, Math.max(0, this.changesHistory.length - this.maxUndoSteps));
-    this.previousChanges = this.cloneChanges(changes);
-    this.onHistoryChanged(this.changesHistory.length);
+    historyRef.current.splice(0, Math.max(0, historyRef.current.length - maxUndoStepsRef.current));
+    previousChangesRef.current = cloneChanges(value);
+    updateChanges(value);
+    setHistoryLength(historyRef.current.length);
   }
 
-  undoLastChange(grid: DataGrid): void {
-    const step = this.changesHistory.pop();
+  const onChangesChange = useCallback((value: DataChange[]): void => {
+    if (value.length === 0) {
+      resetHistory();
+      updateChanges([]);
+      return;
+    }
+    recordChanges(value);
+  }, []);
+
+  const undoLastChange = useCallback((): void => {
+    const step = historyRef.current.pop();
     if (!step) {
       return;
     }
 
-    const pendingChanges = grid.option('editing.changes');
-    const changes = this.cloneChanges(Array.isArray(pendingChanges) ? pendingChanges : []);
-    const index = changes.findIndex((change) => this.getChangeKey(change) === step.key);
+    const nextChanges = cloneChanges(changesRef.current);
+    const index = nextChanges.findIndex((change) => getChangeKey(change) === step.key);
     if (index >= 0) {
-      changes.splice(index, 1);
+      nextChanges.splice(index, 1);
     }
     if (step.before) {
-      changes.splice(index >= 0 ? index : changes.length, 0, this.cloneChanges([step.before])[0]);
+      nextChanges.splice(index >= 0 ? index : nextChanges.length, 0, cloneChanges([step.before])[0]);
     }
 
-    this.isUndoing = true;
-    try {
-      grid.option('editing.changes', changes);
-      this.previousChanges = this.cloneChanges(changes);
-    } finally {
-      this.isUndoing = false;
-      this.onHistoryChanged(this.changesHistory.length);
-    }
-  }
+    previousChangesRef.current = cloneChanges(nextChanges);
+    updateChanges(nextChanges);
+    setHistoryLength(historyRef.current.length);
+  }, []);
 
-  resetHistory(): void {
-    this.changesHistory.length = 0;
-    this.previousChanges = [];
-    this.onHistoryChanged(0);
-  }
+  const setMaxUndoSteps = useCallback((value: number): void => {
+    maxUndoStepsRef.current = value;
+    historyRef.current.splice(0, Math.max(0, historyRef.current.length - value));
+    setHistoryLength(historyRef.current.length);
+  }, []);
 
-  getHistoryLength(): number {
-    return this.changesHistory.length;
-  }
+  const setUndoTypes = useCallback((value: ChangeType[]): void => {
+    undoTypesRef.current = value;
+    historyRef.current = historyRef.current.filter((step) => value.includes(step.type));
+    setHistoryLength(historyRef.current.length);
+  }, []);
 
-  setMaxUndoSteps(maxSteps: number): void {
-    this.maxUndoSteps = maxSteps;
-    this.changesHistory.splice(0, Math.max(0, this.changesHistory.length - this.maxUndoSteps));
-    this.onHistoryChanged(this.changesHistory.length);
-  }
-
-  setUndoTypes(types: ChangeType[]): void {
-    this.undoTypes = types;
-    for (let index = this.changesHistory.length - 1; index >= 0; index -= 1) {
-      if (!this.undoTypes.includes(this.changesHistory[index].type)) {
-        this.changesHistory.splice(index, 1);
-      }
-    }
-    this.onHistoryChanged(this.changesHistory.length);
-  }
-
-  isUndoInProgress(): boolean {
-    return this.isUndoing;
-  }
+  return {
+    changes,
+    historyLength,
+    onChangesChange,
+    undoLastChange,
+    setMaxUndoSteps,
+    setUndoTypes,
+  };
 }
