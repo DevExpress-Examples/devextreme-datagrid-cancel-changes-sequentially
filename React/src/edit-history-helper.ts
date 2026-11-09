@@ -18,6 +18,33 @@ type UseEditHistoryOptions = {
   undoTypes: ChangeType[];
 };
 
+function cloneChanges(value: DataChange[]): DataChange[] {
+  return structuredClone(value);
+}
+
+function cloneChange(value: DataChange): DataChange {
+  return structuredClone(value);
+}
+
+function getChangeKey(change: DataChange): string | undefined {
+  return JSON.stringify(change.key);
+}
+
+function getStepType(before: DataChange | undefined, after: DataChange | undefined): ChangeType {
+  if (after?.type === DataChangeType.REMOVE || before?.type === DataChangeType.REMOVE
+    || (!after && before?.type === DataChangeType.INSERT)) {
+    return DataChangeType.REMOVE;
+  }
+  if (after?.type === DataChangeType.INSERT) {
+    return DataChangeType.INSERT;
+  }
+  return DataChangeType.UPDATE;
+}
+
+function trimHistory(history: HistoryStep[], maxUndoSteps: number): HistoryStep[] {
+  return history.slice(Math.max(0, history.length - maxUndoSteps));
+}
+
 export function useEditHistory({ maxUndoSteps, undoTypes }: UseEditHistoryOptions) {
   const [changes, setChanges] = useState<DataChange[]>([]);
   const [historyLength, setHistoryLength] = useState(0);
@@ -27,32 +54,25 @@ export function useEditHistory({ maxUndoSteps, undoTypes }: UseEditHistoryOption
   const maxUndoStepsRef = useRef(maxUndoSteps);
   const undoTypesRef = useRef(undoTypes);
 
-  function cloneChanges(value: DataChange[]): DataChange[] {
-    return structuredClone(value);
-  }
-
-  function getChangeKey(change: DataChange): string | undefined {
-    return JSON.stringify(change.key);
-  }
-
-  function updateChanges(value: DataChange[]): void {
+  const updateChanges = useCallback((value: DataChange[]): void => {
     changesRef.current = value;
+    previousChangesRef.current = cloneChanges(value);
     setChanges(value);
-  }
+  }, []);
 
-  function resetHistory(): void {
-    historyRef.current = [];
-    previousChangesRef.current = [];
-    setHistoryLength(0);
-  }
+  const updateHistory = useCallback((value: HistoryStep[]): void => {
+    historyRef.current = value;
+    setHistoryLength(value.length);
+  }, []);
 
-  function recordChanges(value: DataChange[]): void {
+  const recordChanges = useCallback((value: DataChange[]): void => {
     const beforeByKey = new Map(previousChangesRef.current.map((change) => [
       getChangeKey(change),
       change,
     ]));
     const afterByKey = new Map(value.map((change) => [getChangeKey(change), change]));
     const keys = new Set([...beforeByKey.keys(), ...afterByKey.keys()]);
+    let history = [...historyRef.current];
 
     keys.forEach((key) => {
       const before = beforeByKey.get(key);
@@ -61,44 +81,30 @@ export function useEditHistory({ maxUndoSteps, undoTypes }: UseEditHistoryOption
         return;
       }
 
-      let type: ChangeType;
-      if (after?.type === DataChangeType.REMOVE || before?.type === DataChangeType.REMOVE
-        || (!after && before?.type === DataChangeType.INSERT)) {
-        type = DataChangeType.REMOVE;
-      } else if (after?.type === DataChangeType.INSERT) {
-        type = DataChangeType.INSERT;
-      } else {
-        type = DataChangeType.UPDATE;
-      }
-
+      const type = getStepType(before, after);
       if (undoTypesRef.current.includes(type)) {
-        historyRef.current.push({
-          key,
-          before: before && cloneChanges([before])[0],
-          type,
-        });
+        history.push({ key, before: before && cloneChange(before), type });
       } else {
-        historyRef.current = historyRef.current.filter((step) => step.key !== key);
+        history = history.filter((step) => step.key !== key);
       }
     });
 
-    historyRef.current.splice(0, Math.max(0, historyRef.current.length - maxUndoStepsRef.current));
-    previousChangesRef.current = cloneChanges(value);
+    updateHistory(trimHistory(history, maxUndoStepsRef.current));
     updateChanges(value);
-    setHistoryLength(historyRef.current.length);
-  }
+  }, [updateChanges, updateHistory]);
 
   const onChangesChange = useCallback((value: DataChange[]): void => {
     if (value.length === 0) {
-      resetHistory();
+      updateHistory([]);
       updateChanges([]);
       return;
     }
     recordChanges(value);
-  }, []);
+  }, [recordChanges, updateChanges, updateHistory]);
 
   const undoLastChange = useCallback((): void => {
-    const step = historyRef.current.pop();
+    const history = [...historyRef.current];
+    const step = history.pop();
     if (!step) {
       return;
     }
@@ -109,25 +115,22 @@ export function useEditHistory({ maxUndoSteps, undoTypes }: UseEditHistoryOption
       nextChanges.splice(index, 1);
     }
     if (step.before) {
-      nextChanges.splice(index >= 0 ? index : nextChanges.length, 0, cloneChanges([step.before])[0]);
+      nextChanges.splice(index >= 0 ? index : nextChanges.length, 0, cloneChange(step.before));
     }
 
-    previousChangesRef.current = cloneChanges(nextChanges);
+    updateHistory(history);
     updateChanges(nextChanges);
-    setHistoryLength(historyRef.current.length);
-  }, []);
+  }, [updateChanges, updateHistory]);
 
   const setMaxUndoSteps = useCallback((value: number): void => {
     maxUndoStepsRef.current = value;
-    historyRef.current.splice(0, Math.max(0, historyRef.current.length - value));
-    setHistoryLength(historyRef.current.length);
-  }, []);
+    updateHistory(trimHistory(historyRef.current, value));
+  }, [updateHistory]);
 
   const setUndoTypes = useCallback((value: ChangeType[]): void => {
     undoTypesRef.current = value;
-    historyRef.current = historyRef.current.filter((step) => value.includes(step.type));
-    setHistoryLength(historyRef.current.length);
-  }, []);
+    updateHistory(historyRef.current.filter((step) => value.includes(step.type)));
+  }, [updateHistory]);
 
   return {
     changes,

@@ -2,7 +2,7 @@ import {
   useCallback, useEffect, useMemo, useRef, useState,
 } from 'react';
 import './App.css';
-import 'devextreme/dist/css/dx.material.blue.light.compact.css';
+import 'devextreme/dist/css/dx.fluent.blue.light.css';
 import DataGrid, {
   Column,
   Editing,
@@ -86,10 +86,6 @@ function App(): JSX.Element {
     previousUndoTypes.current = [...newValue];
   }, [setUndoTypes]);
 
-  const handleSaved = useCallback((): void => {
-    onChangesChange([]);
-  }, [onChangesChange]);
-
   const undoButtonOptions = useMemo(() => ({
     icon: 'revert',
     hint: 'Undo the last change',
@@ -101,11 +97,11 @@ function App(): JSX.Element {
   return (
     <main className="demo-container">
       <DataGrid
+        className="orders-grid"
         dataSource={dataSource}
         showBorders={true}
         repaintChangesOnly={true}
         ref={gridRef}
-        onSaved={handleSaved}
       >
         <Editing
           mode="batch"
