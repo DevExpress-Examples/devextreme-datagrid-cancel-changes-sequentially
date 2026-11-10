@@ -1,3 +1,5 @@
+using System.Net.Http;
+using ASP_NET_Core.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -11,6 +13,10 @@ public class Program {
         builder.Services
             .AddControllersWithViews()
             .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = null);
+
+        builder.Services
+            .AddHttpClient<OrdersApiClient>()
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseCookies = false });
 
         var app = builder.Build();
 

@@ -306,4 +306,7 @@ TesterMetadata.xml
 */wwwroot/*
 
 !*/wwwroot/css/Site.css
+!*/wwwroot/js/
+*/wwwroot/js/*
+!*/wwwroot/js/editHistoryHelper.js
 *.DS_Store

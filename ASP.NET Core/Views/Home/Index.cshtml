@@ -1,29 +1,182 @@
 @using ASP_NET_Core.Models
 
-<h2>Home</h2>
+@{
+    ViewData["Title"] = "DataGrid - Cancel Changes One by One";
 
-@(Html.DevExtreme().DataGrid<SampleOrder>()
-    .ShowBorders(true)
-    .DataSource(d => d.Mvc().Controller("SampleData").LoadAction("Get").Key("OrderID"))
-    .Columns(columns => {
-        columns.AddFor(m => m.OrderID);
-        columns.AddFor(m => m.OrderDate);
-        columns.AddFor(m => m.CustomerName);
-        columns.AddFor(m => m.ShipCountry);
-        columns.AddFor(m => m.ShipCity);
-    })
-    .Paging(p => p.PageSize(10))
-    .FilterRow(f => f.Visible(true))
-    .HeaderFilter(f => f.Visible(true))
-    .GroupPanel(p => p.Visible(true))
-    .Grouping(g => g.AutoExpandAll(false))
-    .RemoteOperations(true)
-    .Summary(s => s
-        .TotalItems(totalItems => {
-            totalItems.AddFor(m => m.ShipCity).SummaryType(SummaryType.Count);
-        })
-        .GroupItems(groupItems => {
-            groupItems.Add().SummaryType(SummaryType.Count);
-        })
+    const int defaultMaxUndoSteps = 50;
+    var undoTypes = new[] { "insert", "remove", "update" };
+}
+
+<script src="~/js/editHistoryHelper.js" asp-append-version="true"></script>
+
+@(Html.DevExtreme().DataGrid<Order>()
+    .ID("grid-container")
+    .DataSource(d => d.Mvc()
+        .Controller("DataGridWebApi")
+        .LoadAction("Orders")
+        .InsertAction("InsertOrder")
+        .UpdateAction("UpdateOrder")
+        .DeleteAction("DeleteOrder")
+        .Key("OrderID")
+        .LoadMode(DataSourceLoadMode.Raw)
     )
+    .ShowBorders(true)
+    .RepaintChangesOnly(true)
+    .DateSerializationFormat("yyyy-MM-ddTHH:mm:ss")
+    .Editing(editing => editing
+        .Mode(GridEditMode.Batch)
+        .AllowAdding(true)
+        .AllowDeleting(true)
+        .AllowUpdating(true)
+    )
+    .Columns(columns => {
+        columns.AddFor(m => m.OrderID)
+            .Width(110)
+            .AllowEditing(false);
+
+        columns.AddFor(m => m.OrderDate)
+            .Width(130);
+
+        columns.AddFor(m => m.ShipName)
+            .Width(340)
+            .EditorOptions(new { maxLength = 40 });
+
+        columns.AddFor(m => m.ShipCountry)
+            .Width(220)
+            .EditorOptions(new { maxLength = 15 });
+    })
+    .Toolbar(toolbar => toolbar.Items(items => {
+        items.Add().Name(DataGridToolbarItem.AddRowButton);
+        items.Add().Name(DataGridToolbarItem.SaveButton);
+
+        items.Add()
+            .Location(ToolbarItemLocation.After)
+            .Widget(w => w.Button()
+                .Icon("revert")
+                .Hint("Undo the last change")
+                .ElementAttr("aria-label", "Undo the last change")
+                .Disabled(true)
+                .OnInitialized(@<text>
+                    function(e) {
+                        undoButton = e.component;
+                    }
+                </text>)
+                .OnClick(@<text>
+                    function() {
+                        editHistoryHelper.undoLastChange(grid);
+                    }
+                </text>)
+            );
+
+        items.Add()
+            .Name(DataGridToolbarItem.RevertButton)
+            .Widget(w => w.Button()
+                .Icon("trash")
+            );
+    }))
+    .OnInitialized(@<text>
+        function(e) {
+            grid = e.component;
+            document.addEventListener("keydown", handleUndoKeyDown, true);
+        }
+    </text>)
+    .OnDisposing(@<text>
+        function() {
+            document.removeEventListener("keydown", handleUndoKeyDown, true);
+        }
+    </text>)
+    .OnOptionChanged(@<text>
+        function(e) {
+            if(e.fullName === "editing.changes"
+                && Array.isArray(e.value)
+                && !editHistoryHelper.isUndoInProgress()) {
+                if(e.value.length === 0) {
+                    editHistoryHelper.resetHistory();
+                } else {
+                    editHistoryHelper.recordChanges(e.value);
+                }
+            }
+        }
+    </text>)
+    .OnSaved(@<text>
+        function() {
+            editHistoryHelper.resetHistory();
+        }
+    </text>)
 )
+
+<div class="options">
+    <div class="caption">Options</div>
+    <div class="option">
+        <span id="max-undo-label">Maximum undo steps</span>
+        @(Html.DevExtreme().NumberBox()
+            .ID("max-undo-steps")
+            .Value(defaultMaxUndoSteps)
+            .Width(120)
+            .Min(0)
+            .Max(1000)
+            .Step(1)
+            .Format("#0")
+            .ShowSpinButtons(true)
+            .InputAttr("aria-labelledby", "max-undo-label")
+            .OnValueChanged(@<text>
+                function(e) {
+                    const value = Number.isFinite(e.value) ? Math.floor(e.value) : @defaultMaxUndoSteps;
+                    const limit = Math.max(0, Math.min(1000, value));
+                    if(e.value !== limit) {
+                        e.component.option("value", limit);
+                        return;
+                    }
+                    editHistoryHelper.setMaxUndoSteps(limit);
+                }
+            </text>)
+        )
+    </div>
+    <div class="option">
+        <span id="undo-types-label">Undo edit types</span>
+        @(Html.DevExtreme().TagBox()
+            .ID("undo-types")
+            .Items(undoTypes)
+            .Value(undoTypes)
+            .Width(250)
+            .ShowSelectionControls(true)
+            .ShowClearButton(true)
+            .InputAttr("aria-labelledby", "undo-types-label")
+            .OnValueChanged(@<text>
+                function(e) {
+                    const previousValue = e.previousValue || [];
+                    const itemsAdded = e.value.some((item) => !previousValue.includes(item));
+
+                    editHistoryHelper.setUndoTypes(e.value);
+
+                    if(itemsAdded) {
+                        grid.cancelEditData();
+                    }
+                }
+            </text>)
+        )
+    </div>
+</div>
+
+<script>
+    let grid;
+    let undoButton;
+
+    const editHistoryHelper = new EditHistoryHelper({
+        maxUndoSteps: @defaultMaxUndoSteps,
+        undoTypes: @Json.Serialize(undoTypes),
+        onHistoryChanged: updateToolbarState,
+    });
+
+    function updateToolbarState(historyLength) {
+        undoButton?.option("disabled", historyLength === 0);
+    }
+
+    function handleUndoKeyDown(event) {
+        if(event.ctrlKey && !event.shiftKey && !event.altKey
+            && event.key?.toLowerCase() === "z") {
+            event.preventDefault();
+            editHistoryHelper.undoLastChange(grid);
+        }
+    }
+</script>
