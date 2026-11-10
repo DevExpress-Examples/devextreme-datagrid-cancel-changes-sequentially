@@ -49,7 +49,6 @@
         items.Add().Name(DataGridToolbarItem.AddRowButton);
         items.Add().Name(DataGridToolbarItem.SaveButton);
 
-        // Replaces the built-in "Discard changes" (revertButton) item
         items.Add()
             .Location(ToolbarItemLocation.After)
             .Widget(w => w.Button()
@@ -70,22 +69,9 @@
             );
 
         items.Add()
-            .Location(ToolbarItemLocation.After)
+            .Name(DataGridToolbarItem.RevertButton)
             .Widget(w => w.Button()
                 .Icon("trash")
-                .Hint("Clear all changes")
-                .ElementAttr("aria-label", "Clear all changes")
-                .Disabled(true)
-                .OnInitialized(@<text>
-                    function(e) {
-                        clearChangesButton = e.component;
-                    }
-                </text>)
-                .OnClick(@<text>
-                    function() {
-                        editHistoryHelper.clearHistory(grid);
-                    }
-                </text>)
             );
     }))
     .OnInitialized(@<text>
@@ -104,7 +90,11 @@
             if(e.fullName === "editing.changes"
                 && Array.isArray(e.value)
                 && !editHistoryHelper.isUndoInProgress()) {
-                editHistoryHelper.recordChanges(e.value);
+                if(e.value.length === 0) {
+                    editHistoryHelper.resetHistory();
+                } else {
+                    editHistoryHelper.recordChanges(e.value);
+                }
             }
         }
     </text>)
@@ -171,7 +161,6 @@
 <script>
     let grid;
     let undoButton;
-    let clearChangesButton;
 
     const editHistoryHelper = new EditHistoryHelper({
         maxUndoSteps: @defaultMaxUndoSteps,
@@ -181,7 +170,6 @@
 
     function updateToolbarState(historyLength) {
         undoButton?.option("disabled", historyLength === 0);
-        clearChangesButton?.option("disabled", grid ? !grid.hasEditData() : historyLength === 0);
     }
 
     function handleUndoKeyDown(event) {

@@ -2,7 +2,6 @@ $(() => {
   const url = 'https://js.devexpress.com/Demos/Mvc/api/DataGridWebApi';
   const undoTypes = Object.values(DataChangeType);
   let undoButton;
-  let clearHistoryButton;
 
   let grid;
   
@@ -10,16 +9,13 @@ $(() => {
     maxUndoSteps: 50,
     undoTypes,
     onHistoryChanged: (historyLength) => {
-      updateControlsState(historyLength, grid);
+      updateControlsState(historyLength);
     },
   });
 
-  function updateControlsState(historyLength, gridInstance) {
+  function updateControlsState(historyLength) {
     if (undoButton) {
       undoButton.option('disabled', historyLength === 0);
-    }
-    if (clearHistoryButton) {
-      clearHistoryButton.option('disabled', gridInstance ? !gridInstance.hasEditData() : historyLength === 0);
     }
   }
 
@@ -78,51 +74,41 @@ $(() => {
     onDisposing() {
       document.removeEventListener('keydown', handleUndoKeyDown, true);
     },
-    onToolbarPreparing(e) {
-      e.toolbarOptions.items = e.toolbarOptions.items.map((item) => {
-        if (item.name === 'revertButton') {
-          return {
-            widget: 'dxButton',
-            location: item.location,
-            options: {
-              icon: 'revert',
-              hint: 'Undo the last change',
-              elementAttr: { 'aria-label': 'Undo the last change' },
-              disabled: changeHistoryHelper.getHistoryLength() === 0,
-              onInitialized(args) {
-                undoButton = args.component;
-              },
-              onClick() {
-                changeHistoryHelper.undoLastChange(e.component);
-              },
+    toolbar: {
+      items: [
+        'addRowButton',
+        'saveButton',
+        {
+          widget: 'dxButton',
+          location: 'after',
+          options: {
+            icon: 'revert',
+            hint: 'Undo the last change',
+            elementAttr: { 'aria-label': 'Undo the last change' },
+            disabled: changeHistoryHelper.getHistoryLength() === 0,
+            onInitialized(args) {
+              undoButton = args.component;
             },
-          };
-        }
-        return item;
-      });
-      
-      e.toolbarOptions.items.push({
-        widget: 'dxButton',
-        location: 'after',
-        options: {
-          icon: 'trash',
-          hint: 'Clear all changes',
-          elementAttr: { 'aria-label': 'Clear all changes' },
-          disabled: !e.component.hasEditData(),
-          onInitialized(args) {
-            clearHistoryButton = args.component;
-          },
-          onClick() {
-            changeHistoryHelper.clearHistory(e.component);
+            onClick() {
+              changeHistoryHelper.undoLastChange(grid);
+            },
           },
         },
-      });
+        {
+          name: 'revertButton',
+          options: { icon: 'trash' },
+        },
+      ],
     },
     onOptionChanged(e) {
       if (e.fullName === 'editing.changes'
         && Array.isArray(e.value)
         && !changeHistoryHelper.isUndoInProgress()) {
-        changeHistoryHelper.recordChanges(e.value);
+        if (e.value.length === 0) {
+          changeHistoryHelper.resetHistory();
+        } else {
+          changeHistoryHelper.recordChanges(e.value);
+        }
       }
     },
     onSaved() {

@@ -94,11 +94,6 @@ class EditHistoryHelper {
     }
   }
 
-  clearHistory(grid) {
-    grid.option('editing.changes', []);
-    this.resetHistory();
-  }
-
   resetHistory() {
     this.changesHistory.length = 0;
     this.previousChanges = [];
