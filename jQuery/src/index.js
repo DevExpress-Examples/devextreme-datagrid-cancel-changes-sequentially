@@ -1,12 +1,13 @@
 $(() => {
   const url = 'https://js.devexpress.com/Demos/Mvc/api/DataGridWebApi';
+  const defaultMaxUndoSteps = 50;
   const undoTypes = Object.values(DataChangeType);
   let undoButton;
 
   let grid;
   
   const changeHistoryHelper = new EditHistoryHelper({
-    maxUndoSteps: 50,
+    maxUndoSteps: defaultMaxUndoSteps,
     undoTypes,
     onHistoryChanged: (historyLength) => {
       updateControlsState(historyLength);
@@ -33,7 +34,8 @@ $(() => {
   });
 
   function handleUndoKeyDown(event) {
-    if (event.ctrlKey && !event.shiftKey && !event.altKey
+    if (changeHistoryHelper.getHistoryLength() > 0
+      && event.ctrlKey && !event.shiftKey && !event.altKey
       && event.key?.toLowerCase() === 'z') {
       event.preventDefault();
       changeHistoryHelper.undoLastChange(grid);
@@ -119,7 +121,7 @@ $(() => {
   document.addEventListener('keydown', handleUndoKeyDown, true);
 
   $('#max-undo-steps').dxNumberBox({
-    value: 50,
+    value: defaultMaxUndoSteps,
     width: 120,  
     min: 0,
     max: 1000,
@@ -128,7 +130,7 @@ $(() => {
     showSpinButtons: true,
     inputAttr: { 'aria-labelledby': 'max-undo-label' },
     onValueChanged(e) {
-      const value = Number.isFinite(e.value) ? Math.floor(e.value) : 50;
+      const value = Number.isFinite(e.value) ? Math.floor(e.value) : defaultMaxUndoSteps;
       const limit = Math.max(0, Math.min(1000, value));
       if (e.value !== limit) {
         e.component.option('value', limit);
@@ -138,8 +140,6 @@ $(() => {
     },
   });
 
-  let undoTypesHelper;
-
   $('#undo-types').dxTagBox({
     width: 250,
     items: undoTypes,
@@ -148,22 +148,15 @@ $(() => {
     showSelectAll: true,
     showClearButton: true,
     inputAttr: { 'aria-labelledby': 'undo-types-label' },
-    onInitialized(e) {
-      undoTypesHelper = { previousValue: e.component.option('value') };
-    },
     onValueChanged(e) {
       const newValue = e.value;
-      const previousValue = undoTypesHelper.previousValue || [];
-      
-      const itemsAdded = newValue.some(item => !previousValue.includes(item));
+      const itemsAdded = newValue.some(item => !e.previousValue.includes(item));
       
       changeHistoryHelper.setUndoTypes(newValue);
       
       if (itemsAdded) {
         grid.cancelEditData();
       }
-      
-      undoTypesHelper.previousValue = newValue;
     },
   });
 });

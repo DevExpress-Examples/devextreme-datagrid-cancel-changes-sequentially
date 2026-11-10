@@ -18,6 +18,7 @@ import { createStore } from 'devextreme-aspnet-data-nojquery';
 import { DataChangeType, useEditHistory } from './edit-history-helper';
 
 const apiUrl = 'https://js.devexpress.com/Demos/Mvc/api/DataGridWebApi';
+const defaultMaxUndoSteps = 50;
 const undoTypes = Object.values(DataChangeType);
 type StoreBeforeSend = NonNullable<Parameters<typeof createStore>[0]['onBeforeSend']>;
 
@@ -44,9 +45,8 @@ const revertButtonOptions = { icon: 'trash' };
 
 function App(): JSX.Element {
   const gridRef = useRef<DataGridRef>(null);
-  const [maxUndoSteps, setMaxUndoStepsValue] = useState(50);
+  const [maxUndoSteps, setMaxUndoStepsValue] = useState(defaultMaxUndoSteps);
   const [selectedUndoTypes, setSelectedUndoTypes] = useState<typeof undoTypes>(undoTypes);
-  const previousUndoTypes = useRef(undoTypes);
   const {
     changes,
     historyLength,
@@ -54,21 +54,22 @@ function App(): JSX.Element {
     undoLastChange,
     setMaxUndoSteps,
     setUndoTypes,
-  } = useEditHistory({ maxUndoSteps: 50, undoTypes });
+  } = useEditHistory({ maxUndoSteps: defaultMaxUndoSteps, undoTypes });
 
   useEffect(() => {
     function handleUndoKeyDown(event: KeyboardEvent): void {
-      if (event.ctrlKey && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'z') {
+      if (historyLength > 0
+        && event.ctrlKey && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'z') {
         event.preventDefault();
         undoLastChange();
       }
     }
     document.addEventListener('keydown', handleUndoKeyDown);
     return () => document.removeEventListener('keydown', handleUndoKeyDown);
-  }, [undoLastChange]);
+  }, [historyLength, undoLastChange]);
 
   const handleMaxUndoStepsChanged = useCallback((event: NumberBoxTypes.ValueChangedEvent): void => {
-    const value = Number.isFinite(event.value) ? Math.floor(event.value) : 50;
+    const value = Number.isFinite(event.value) ? Math.floor(event.value) : defaultMaxUndoSteps;
     const limit = Math.max(0, Math.min(1000, value));
     setMaxUndoStepsValue(limit);
     setMaxUndoSteps(limit);
@@ -76,14 +77,13 @@ function App(): JSX.Element {
 
   const handleUndoTypesChanged = useCallback((event: TagBoxTypes.ValueChangedEvent): void => {
     const newValue = event.value as typeof undoTypes;
-    const itemsAdded = newValue.some((item) => !previousUndoTypes.current.includes(item));
+    const itemsAdded = newValue.some((item) => !event.previousValue.includes(item));
 
     setSelectedUndoTypes(newValue);
     setUndoTypes(newValue);
     if (itemsAdded) {
       gridRef.current?.instance().cancelEditData();
     }
-    previousUndoTypes.current = [...newValue];
   }, [setUndoTypes]);
 
   const undoButtonOptions = useMemo(() => ({
