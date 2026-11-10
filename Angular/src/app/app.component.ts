@@ -18,6 +18,7 @@ const apiUrl = 'https://js.devexpress.com/Demos/Mvc/api/DataGridWebApi';
   styleUrls: ['./app.component.scss'],
 })
 export class AppComponent {
+  readonly defaultMaxUndoSteps = 50;
   readonly undoTypes = Object.values(DataChangeType);
   readonly revertButtonOptions = { icon: 'trash' };
   readonly dataSource = createStore({
@@ -34,7 +35,7 @@ export class AppComponent {
   });
 
   readonly changeHistoryHelper = new EditHistoryHelper({
-    maxUndoSteps: 50,
+    maxUndoSteps: this.defaultMaxUndoSteps,
     undoTypes: this.undoTypes,
     onHistoryChanged: () => this.updateControlsState(),
   });
@@ -55,11 +56,11 @@ export class AppComponent {
 
   private grid?: DataGrid;
   private undoButton?: Button;
-  private previousUndoTypes = [...this.undoTypes];
 
   @HostListener('document:keydown', ['$event'])
   handleUndoKeyDown(event: KeyboardEvent): void {
-    if (event.ctrlKey && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'z') {
+    if (this.changeHistoryHelper.getHistoryLength() > 0
+      && event.ctrlKey && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'z') {
       event.preventDefault();
       if (this.grid) {
         this.changeHistoryHelper.undoLastChange(this.grid);
@@ -89,7 +90,7 @@ export class AppComponent {
   }
 
   onMaxUndoStepsChanged(e: DxNumberBoxTypes.ValueChangedEvent): void {
-    const value = Number.isFinite(e.value) ? Math.floor(e.value) : 50;
+    const value = Number.isFinite(e.value) ? Math.floor(e.value) : this.defaultMaxUndoSteps;
     const limit = Math.max(0, Math.min(1000, value));
     if (e.value !== limit) {
       e.component.option('value', limit);
@@ -100,13 +101,12 @@ export class AppComponent {
 
   onUndoTypesChanged(e: DxTagBoxTypes.ValueChangedEvent): void {
     const newValue = e.value as typeof this.undoTypes;
-    const itemsAdded = newValue.some((item) => !this.previousUndoTypes.includes(item));
+    const itemsAdded = newValue.some((item) => !e.previousValue.includes(item));
 
     this.changeHistoryHelper.setUndoTypes(newValue);
     if (itemsAdded) {
       this.grid?.cancelEditData();
     }
-    this.previousUndoTypes = [...newValue];
   }
 
   private updateControlsState(): void {
