@@ -21,6 +21,7 @@ import { createStore } from 'devextreme-aspnet-data-nojquery';
 import { DataChangeType, EditHistoryHelper } from '../edit-history-helper';
 
 const apiUrl = 'https://js.devexpress.com/Demos/Mvc/api/DataGridWebApi';
+const defaultMaxUndoSteps = 50;
 const undoTypes = Object.values(DataChangeType);
 type UndoTypes = typeof undoTypes;
 type StoreBeforeSend = NonNullable<Parameters<typeof createStore>[0]['onBeforeSend']>;
@@ -47,12 +48,11 @@ const shipCountryEditorOptions = { maxLength: 15 };
 const revertButtonOptions = { icon: 'trash' };
 
 let gridInstance: dxDataGrid | undefined;
-const maxUndoSteps = ref(50);
+const maxUndoSteps = ref(defaultMaxUndoSteps);
 const selectedUndoTypes = ref<UndoTypes>([...undoTypes]);
-let previousUndoTypes: UndoTypes = [...undoTypes];
 const historyLength = ref(0);
 const changeHistoryHelper = new EditHistoryHelper({
-  maxUndoSteps: 50,
+  maxUndoSteps: defaultMaxUndoSteps,
   undoTypes: [...undoTypes],
   onHistoryChanged: (length) => {
     historyLength.value = length;
@@ -66,7 +66,8 @@ function undoLastChange(): void {
 }
 
 function handleUndoKeyDown(event: KeyboardEvent): void {
-  if (event.ctrlKey && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'z') {
+  if (historyLength.value > 0
+    && event.ctrlKey && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'z') {
     event.preventDefault();
     undoLastChange();
   }
@@ -96,7 +97,7 @@ function onGridSaved(): void {
 }
 
 function handleMaxUndoStepsChanged(event: NumberBoxValueChangedEvent): void {
-  const value = Number.isFinite(event.value) ? Math.floor(event.value) : 50;
+  const value = Number.isFinite(event.value) ? Math.floor(event.value) : defaultMaxUndoSteps;
   const limit = Math.max(0, Math.min(1000, value));
   maxUndoSteps.value = limit;
   changeHistoryHelper.setMaxUndoSteps(limit);
@@ -104,14 +105,13 @@ function handleMaxUndoStepsChanged(event: NumberBoxValueChangedEvent): void {
 
 function handleUndoTypesChanged(event: TagBoxValueChangedEvent): void {
   const newValue = event.value as UndoTypes;
-  const itemsAdded = newValue.some((item) => !previousUndoTypes.includes(item));
+  const itemsAdded = newValue.some((item) => !event.previousValue.includes(item));
 
   selectedUndoTypes.value = newValue;
   changeHistoryHelper.setUndoTypes(newValue);
   if (itemsAdded) {
     gridInstance?.cancelEditData();
   }
-  previousUndoTypes = [...newValue];
 }
 
 const undoButtonOptions = computed(() => ({
