@@ -1,44 +1,40 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AppComponent } from './app.component';
 
 describe('AppComponent', () => {
+  let fixture: ComponentFixture<AppComponent>;
+  let element: HTMLElement;
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [
-        AppComponent,
-      ],
+      imports: [AppComponent],
     }).compileComponents();
-  });
 
-  it('should create the app', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
-  });
-
-  it('should have as title \'Angular\'', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app.title).toEqual('Angular');
-  });
-
-  it('should render the dx-button', () => {
-    const fixture = TestBed.createComponent(AppComponent);
+    fixture = TestBed.createComponent(AppComponent);
+    Object.assign(fixture.componentInstance, { dataSource: [] });
     fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('dx-button')).toBeTruthy();
+    await fixture.whenStable();
+    element = fixture.nativeElement as HTMLElement;
   });
 
-  it('should increment the counter and update the button text on click', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
+  it('renders the orders grid', () => {
+    expect(element.querySelector('.dx-datagrid')).not.toBeNull();
+    expect(element.textContent).toContain('Order ID');
+    expect(element.textContent).toContain('Ship Name');
+  });
 
-    expect(app.counter).toEqual(0);
-    expect(app.buttonText).toEqual('Click count: 0');
+  it('renders the undo options with a default limit of 50', () => {
+    const input = element.querySelector<HTMLInputElement>('#max-undo-steps input');
 
-    app.onClick({} as never);
+    expect(input?.value).toBe('50');
+    expect(element.textContent).toContain('Maximum undo steps');
+    expect(element.textContent).toContain('Undo edit types');
+    expect(element.querySelector('#undo-types')).not.toBeNull();
+  });
 
-    expect(app.counter).toEqual(1);
-    expect(app.buttonText).toEqual('Click count: 1');
+  it('disables undo when there are no changes', () => {
+    const button = element.querySelector('[aria-label="Undo the last change"]');
+
+    expect(button?.getAttribute('aria-disabled')).toBe('true');
   });
 });

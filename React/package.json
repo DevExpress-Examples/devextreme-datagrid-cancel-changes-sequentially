@@ -7,7 +7,7 @@
     "dev": "vite",
     "prebuild": "devextreme-license --out src/devextreme-license.ts --force",
     "build": "tsc -b && vite build",
-    "test": "vitest",
+    "test": "vitest run",
     "test:watch": "vitest --watch",
     "lint-ts": "eslint .",
     "lint-css": "stylelint src/**/*.css --allow-empty-input",
