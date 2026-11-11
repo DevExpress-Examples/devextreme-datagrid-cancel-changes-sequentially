@@ -8,7 +8,8 @@
     "prebuild": "devextreme-license --out src/devextreme-license.ts --force",
     "build": "run-p type-check build-only",
     "preview": "vite preview",
-    "test:unit": "vitest --environment jsdom --root src/",
+    "test:unit": "vitest run --environment jsdom --root src/",
+    "test:watch": "vitest --watch --environment jsdom --root src/",
     "build-only": "vite build",
     "type-check": "vue-tsc --noEmit -p tsconfig.vitest.json --composite false",
     "lint": "eslint . --fix"
