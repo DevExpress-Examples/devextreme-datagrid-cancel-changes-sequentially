@@ -4,33 +4,33 @@
 [![](https://img.shields.io/badge/📖_How_to_use_DevExpress_Examples-e9f6fc?style=flat-square)](https://docs.devexpress.com/GeneralInformation/403183)
 [![](https://img.shields.io/badge/💬_Leave_Feedback-feecdd?style=flat-square)](#does-this-example-address-your-development-requirementsobjectives)
 <!-- default badges end -->
-# DevExtreme DataGrid - Cancel Changes One by One
+# DevExtreme DataGrid - Cancel Changes Sequentially
 
-The DevExtreme [DataGrid](https://js.devexpress.com/jQuery/Documentation/Guide/UI_Components/DataGrid/Overview/) accumulates unsaved changes in the [batch edit mode](https://js.devexpress.com/jQuery/Documentation/Guide/UI_Components/DataGrid/Editing/#User_Interaction/Batch_Mode). The built-in **Discard changes** button cancels all pending changes simultaneously. This example implements a custom undo algorithm that discards changes one by one. To undo edits, users can click a custom button in the DataGrid toolbar or press <kbd>Ctrl</kbd>+<kbd>Z</kbd>.
+The DevExtreme [DataGrid](https://js.devexpress.com/jQuery/Documentation/Guide/UI_Components/DataGrid/Overview/) accumulates unsaved changes in the [batch edit mode](https://js.devexpress.com/jQuery/Documentation/Guide/UI_Components/DataGrid/Editing/#User_Interaction/Batch_Mode). The built-in **Discard changes** button cancels all pending changes at once. This example implements a custom undo algorithm that discards changes sequentially (one by one). To revert edits, users can click a custom button in the DataGrid toolbar or press <kbd>Ctrl</kbd>+<kbd>Z</kbd>.
 
 ![DevExtreme DataGrid with a custom undo button and an options panel](images/datagrid-undo-changes.png)
 
-The example saves user edits as steps in change history. An options panel below the DataGrid allows you to adjust the following settings:
+The example saves user edits as steps in change history. The **Options** panel below the DataGrid allows you to adjust the following settings:
 
 - **Maximum undo steps**: Specifies the maximum number of steps in history (default: 50). When history exceeds this limit, the example removes the oldest steps.
-- **Undo edit types**: Specifies change types that users can undo (`insert`, `remove`, and `update`). When you remove a type, the example deletes all steps of this type from history. When you add a type, the example discards all pending changes.
+- **Undo edit types**: Specifies change types that users can undo (`insert`, `remove`, and `update`). When you remove a type, the example removes all steps of this type from history. When you add a type, the Data Grid discards all pending changes.
 
 ## Implementation Details
 
 The `EditHistoryHelper` class in this example implements undo operations. This class compares the [`editing.changes`](https://js.devexpress.com/jQuery/Documentation/ApiReference/UI_Components/dxDataGrid/Configuration/editing/#changes) array's consecutive states and saves previous row states.
 
-The React project in this example implements the same algorithm in the `useEditHistory` hook. This hook returns a `changes` array and an `onChangesChange` handler. Assign these values to `Editing` component properties with the same names.
+The React project implements the same idea in the `useEditHistory` hook. This hook returns a `changes` array and an `onChangesChange` handler. Assign these values to `Editing` component properties using the same names.
 
 Code snippets in this section illustrate the jQuery implementation.
 
 ### Track Pending Changes
 
-Set the [`editing.mode`](https://js.devexpress.com/jQuery/Documentation/ApiReference/UI_Components/dxDataGrid/Configuration/editing/#mode) property to `batch`. This mode allows users to edit multiple rows before they save changes. The DataGrid stores pending changes in the `editing.changes` array.
+Set the [`editing.mode`](https://js.devexpress.com/jQuery/Documentation/ApiReference/UI_Components/dxDataGrid/Configuration/editing/#mode) to `batch`. This mode allows users to edit multiple rows before they save changes. The DataGrid stores pending changes in the `editing.changes` array.
 
 Implement an [`onOptionChanged`](https://js.devexpress.com/jQuery/Documentation/ApiReference/UI_Components/dxDataGrid/Configuration/#onOptionChanged) handler to detect changes to this array. Pass the new array to the [`recordChanges`](jQuery/src/editHistoryHelper.js#L36-L70) helper method. This method compares the new array with the previous array to find modified rows. For each modified row, the method does one of the following:
 
 - If users can undo this change type, the method adds a step to history. Each step stores the row key, change type, and previous row state.
-- If users cannot undo this change type, the method deletes all steps for this row from history. This deletion ensures that undo operations cannot revert the new change indirectly (for example, restore a deleted row).
+- If users cannot undo this change type, the method removes all steps for this row from history. This deletion ensures that undo operations cannot revert the new change indirectly (for example, restore a deleted row).
 
 When the `onOptionChanged` handler receives an empty `editing.changes` array (for example, when a user discards changes), the handler clears the change history. This example also clears the change history in the DataGrid's [`onSaved`](https://js.devexpress.com/jQuery/Documentation/ApiReference/UI_Components/dxDataGrid/Configuration/#onSaved) handler:
 
