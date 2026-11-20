@@ -17,11 +17,11 @@ The example saves user edits as steps in change history. The **Options** panel b
 
 ## Implementation Details
 
+Code snippets in this section illustrate the jQuery implementation.
+
 The `EditHistoryHelper` class in this example implements undo operations. This class compares the [`editing.changes`](https://js.devexpress.com/jQuery/Documentation/ApiReference/UI_Components/dxDataGrid/Configuration/editing/#changes) array's consecutive states and saves previous row states.
 
 The React project implements the same idea in the `useEditHistory` hook. This hook returns a `changes` array and an `onChangesChange` handler. Assign these values to `Editing` component properties using the same names.
-
-Code snippets in this section illustrate the jQuery implementation.
 
 ### Track Pending Changes
 
