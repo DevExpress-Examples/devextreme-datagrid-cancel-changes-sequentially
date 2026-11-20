@@ -32,7 +32,7 @@ Implement an [`onOptionChanged`](https://js.devexpress.com/jQuery/Documentation/
 - If users can undo this change type, the method adds a step to history. Each step stores the row key, change type, and previous row state.
 - If users cannot undo this change type, the method removes all steps for this row from history. This deletion ensures that undo operations cannot revert the new change indirectly (for example, restore a deleted row).
 
-When the `onOptionChanged` handler receives an empty `editing.changes` array (for example, when a user discards changes), the handler clears the change history. This example also clears the change history in the DataGrid's [`onSaved`](https://js.devexpress.com/jQuery/Documentation/ApiReference/UI_Components/dxDataGrid/Configuration/#onSaved) handler:
+When the `onOptionChanged` handler receives an empty `editing.changes` array (for example, when a user discards changes), the handler clears the change history. The DataGrid's [`onSaved`](https://js.devexpress.com/jQuery/Documentation/ApiReference/UI_Components/dxDataGrid/Configuration/#onSaved) handler also clears the change history:
 
 ```js
 onOptionChanged(e) {
@@ -80,11 +80,26 @@ When `undoLastChange` updates the `editing.changes` array, the DataGrid calls th
 
 ### Add an Undo Button
 
-This example adds a custom undo button to the DataGrid [`toolbar`](https://js.devexpress.com/jQuery/Documentation/ApiReference/UI_Components/dxDataGrid/Configuration/toolbar/) and calls the `undoLastChange` method in the button's `onClick` handler.
+Add a custom undo button to the DataGrid [`toolbar`](https://js.devexpress.com/jQuery/Documentation/ApiReference/UI_Components/dxDataGrid/Configuration/toolbar/) and call the `undoLastChange` method in the button's `onClick` handler.
 
-The example passes an `onHistoryChanged` callback to the `EditHistoryHelper` constructor. The helper calls this callback each time history changes (for example, after an edit or undo operation). The callback disables the undo button if history is empty and enables the button otherwise. The button's `onInitialized` handler saves the button instance that the callback uses.
+Pass an `onHistoryChanged` callback to the `EditHistoryHelper` constructor. The helper calls this callback each time history changes (for example, after an edit or undo operation). The callback disables the undo button if history is empty and enables the button otherwise. The button's `onInitialized` handler saves the button instance used in the callback.
 
-This example assigns the `revert` icon to the undo button and changes the predefined **Discard changes** (`revertButton`) button's icon to `trash`:
+```js
+const changeHistoryHelper = new EditHistoryHelper({
+  // ...
+  onHistoryChanged: (historyLength) => {
+    updateControlsState(historyLength);
+  },
+});
+
+function updateControlsState(historyLength) {
+  if (undoButton) {
+    undoButton.option('disabled', historyLength === 0);
+  }
+}
+```
+
+Assign the `revert` icon to the undo button and change the predefined **Discard changes** (`revertButton`) item's icon to `trash` to distinguish these buttons:
 
 ```js
 toolbar: {
@@ -117,7 +132,7 @@ toolbar: {
 
 ### Add an Undo Keyboard Shortcut
 
-This example configures a document-level [`keydown` handler](jQuery/src/index.js#L36-L43) to call `undoLastChange` when a user presses <kbd>Ctrl</kbd>+<kbd>Z</kbd>:
+Configure a document-level [`keydown` handler](jQuery/src/index.js#L36-L43) to call `undoLastChange` when a user presses <kbd>Ctrl</kbd>+<kbd>Z</kbd>:
 
 ```js
 function handleUndoKeyDown(event) {
@@ -139,7 +154,7 @@ Pass `maxUndoSteps` and `undoTypes` options to the `EditHistoryHelper` construct
 - `setMaxUndoSteps`: Sets the maximum number of steps in history. If history exceeds the new limit, the method removes the oldest steps.
 - `setUndoTypes`: Sets change types that users can undo and removes steps of other types from history.
 
-When a user adds a change type, the example also calls the DataGrid [`cancelEditData()`](https://js.devexpress.com/jQuery/Documentation/ApiReference/UI_Components/dxDataGrid/Methods/#cancelEditData) method to discard all pending changes. History contains no steps for edits that users made while the **Undo edit types** setting excluded this type. Without this call, users could not undo these edits.
+When a user adds a change type, this example also calls the DataGrid [`cancelEditData()`](https://js.devexpress.com/jQuery/Documentation/ApiReference/UI_Components/dxDataGrid/Methods/#cancelEditData) method to discard all pending changes. This call ensures that the application skips or restores edits of each type consistently.
 
 ## Files to Review
 
