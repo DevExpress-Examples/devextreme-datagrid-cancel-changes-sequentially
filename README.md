@@ -19,15 +19,15 @@ The example saves user edits as steps in change history. The **Options** panel b
 
 Code snippets in this section illustrate the jQuery implementation.
 
-The `EditHistoryHelper` class in this example implements undo operations. This class compares consecutive states of the [`editing.changes`](https://js.devexpress.com/jQuery/Documentation/ApiReference/UI_Components/dxDataGrid/Configuration/editing/#changes) array and saves previous row states.
+The `EditHistoryHelper` class implements undo operations. This class compares consecutive states of the [`editing.changes`](https://js.devexpress.com/jQuery/Documentation/ApiReference/UI_Components/dxDataGrid/Configuration/editing/#changes) array and saves previous row states.
 
 The React project implements the same idea in the `useEditHistory` hook. This hook returns a `changes` array and an `onChangesChange` handler. Assign each value to the `Editing` component property of the same name.
 
 ### Track Pending Changes
 
-Set the [`editing.mode`](https://js.devexpress.com/jQuery/Documentation/ApiReference/UI_Components/dxDataGrid/Configuration/editing/#mode) to `batch`. This mode allows users to edit multiple rows before they save changes. The DataGrid stores pending changes in the `editing.changes` array.
+Set the [`editing.mode`](https://js.devexpress.com/jQuery/Documentation/ApiReference/UI_Components/dxDataGrid/Configuration/editing/#mode) property to `batch`. This mode allows users to edit multiple rows before they save changes. The DataGrid stores pending changes in the `editing.changes` array.
 
-Implement an [`onOptionChanged`](https://js.devexpress.com/jQuery/Documentation/ApiReference/UI_Components/dxDataGrid/Configuration/#onOptionChanged) handler to detect changes to this array. Pass the new array to the [`recordChanges`](jQuery/src/editHistoryHelper.js#L36-L70) helper method. This method compares the new array with the previous array to find modified rows. For each modified row, the method does one of the following:
+Implement an [`onOptionChanged`](https://js.devexpress.com/jQuery/Documentation/ApiReference/UI_Components/dxDataGrid/Configuration/#onOptionChanged) handler to detect changes in this array. Pass the new array to the [`recordChanges`](jQuery/src/editHistoryHelper.js#L36-L70) helper method. This method compares the new array with the previous array to find modified rows. For each modified row, the method does one of the following:
 
 - If users can undo this change type, the method adds a step to history. Each step stores the row key, change type, and previous row state.
 - If users cannot undo this change type, the method removes all steps for this row from history. This deletion ensures that undo operations cannot revert the new change indirectly (for example, restore a deleted row).
