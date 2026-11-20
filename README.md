@@ -12,8 +12,8 @@ The DevExtreme [DataGrid](https://js.devexpress.com/jQuery/Documentation/Guide/U
 
 The example saves user edits as steps in change history. The **Options** panel below the DataGrid allows you to adjust the following settings:
 
-- **Maximum undo steps**: Specifies the maximum number of steps in history (default: 50). When history exceeds this limit, the example removes the oldest steps.
-- **Undo edit types**: Specifies change types that users can undo (`insert`, `remove`, and `update`). When you remove a type, the example removes all steps of this type from history. When you add a type, the DataGrid discards all pending changes.
+- **Maximum undo steps**: Specifies the maximum number of steps in history (default: 50). When history exceeds this limit, the oldest steps are removed.
+- **Undo edit types**: Specifies change types that users can undo (`insert`, `remove`, and `update`). When you remove a type, all steps of this type are removed from history. When you add a type, the DataGrid discards all pending changes.
 
 ## Implementation Details
 
