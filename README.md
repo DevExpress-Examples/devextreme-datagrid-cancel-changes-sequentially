@@ -82,7 +82,7 @@ When `undoLastChange` updates the `editing.changes` array, the DataGrid calls th
 
 Add a custom undo button to the DataGrid [`toolbar`](https://js.devexpress.com/jQuery/Documentation/ApiReference/UI_Components/dxDataGrid/Configuration/toolbar/) and call the `undoLastChange` method in the button `onClick` handler.
 
-Pass an `onHistoryChanged` callback to the `EditHistoryHelper` constructor. The helper calls this callback each time history changes (for example, after an edit or undo operation). The callback disables the undo button if history is empty and enables the button otherwise. The button `onInitialized` handler saves the button instance used in the callback.
+Pass an `onHistoryChanged` callback to the `EditHistoryHelper` constructor. The helper calls this callback each time history changes (for example, after an edit or undo operation). The callback disables the undo button if history is empty and enables the button otherwise. The button `onInitialized` handler saves the button instance used in the callback:
 
 ```js
 const changeHistoryHelper = new EditHistoryHelper({
@@ -99,7 +99,7 @@ function updateControlsState(historyLength) {
 }
 ```
 
-Assign the `revert` icon to the undo button and change the predefined **Discard changes** (`revertButton`) item's icon to `trash` to distinguish these buttons:
+Assign the `revert` icon to the undo button. To distinguish this button from the predefined **Discard changes** (`revertButton`) item, customize this predefined item to use the `trash` icon:
 
 ```js
 toolbar: {
