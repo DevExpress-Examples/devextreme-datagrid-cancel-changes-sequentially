@@ -1,4 +1,6 @@
-import { computed, Injectable, signal } from '@angular/core';
+import {
+  computed, inject, Injectable, InjectionToken, signal,
+} from '@angular/core';
 import type { DataChange, DataChangeType as ChangeType } from 'devextreme/common/grids';
 
 export const DataChangeType = {
@@ -6,6 +8,13 @@ export const DataChangeType = {
   REMOVE: 'remove',
   UPDATE: 'update',
 } as const;
+
+export type EditHistoryOptions = {
+  maxUndoSteps: number;
+  undoTypes: ChangeType[];
+};
+
+export const EDIT_HISTORY_OPTIONS = new InjectionToken<EditHistoryOptions>('EDIT_HISTORY_OPTIONS');
 
 type HistoryStep = {
   key: string | undefined;
@@ -37,8 +46,9 @@ export class EditHistoryService {
   private readonly pendingChanges = signal<DataChange[]>([]);
   private readonly history = signal<HistoryStep[]>([]);
   private previousChanges: DataChange[] = [];
-  private maxUndoSteps = 50;
-  private undoTypes: ChangeType[] = Object.values(DataChangeType);
+  private readonly options = inject(EDIT_HISTORY_OPTIONS);
+  private maxUndoSteps = this.options.maxUndoSteps;
+  private undoTypes = [...this.options.undoTypes];
 
   readonly changes = this.pendingChanges.asReadonly();
   readonly historyLength = computed(() => this.history().length);

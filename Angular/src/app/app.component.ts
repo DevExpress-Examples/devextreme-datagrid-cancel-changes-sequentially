@@ -6,21 +6,31 @@ import { DxDataGridComponent, DxDataGridModule } from 'devextreme-angular/ui/dat
 import { DxNumberBoxModule, DxNumberBoxTypes } from 'devextreme-angular/ui/number-box';
 import { DxTagBoxModule, DxTagBoxTypes } from 'devextreme-angular/ui/tag-box';
 import { createStore } from 'devextreme-aspnet-data-nojquery';
-import { DataChangeType, EditHistoryService } from './edit-history.service';
+import {
+  DataChangeType, EDIT_HISTORY_OPTIONS, EditHistoryOptions, EditHistoryService,
+} from './edit-history.service';
 
 const apiUrl = 'https://js.devexpress.com/Demos/Mvc/api/DataGridWebApi';
+const defaultMaxUndoSteps = 50;
+const undoTypes = Object.values(DataChangeType);
 
 @Component({
   selector: 'app-root',
   imports: [DxButtonModule, DxDataGridModule, DxNumberBoxModule, DxTagBoxModule],
-  providers: [EditHistoryService],
+  providers: [
+    EditHistoryService,
+    {
+      provide: EDIT_HISTORY_OPTIONS,
+      useValue: { maxUndoSteps: defaultMaxUndoSteps, undoTypes } satisfies EditHistoryOptions,
+    },
+  ],
   templateUrl: './app.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./app.component.scss'],
 })
 export class AppComponent {
-  readonly defaultMaxUndoSteps = 50;
-  readonly undoTypes = Object.values(DataChangeType);
+  readonly defaultMaxUndoSteps = defaultMaxUndoSteps;
+  readonly undoTypes = undoTypes;
   readonly maxUndoSteps = signal(this.defaultMaxUndoSteps);
   readonly selectedUndoTypes = signal([...this.undoTypes]);
   readonly editHistory = inject(EditHistoryService);
@@ -42,7 +52,7 @@ export class AppComponent {
   @HostListener('document:keydown', ['$event'])
   handleUndoKeyDown(event: KeyboardEvent): void {
     if (this.editHistory.historyLength() > 0
-      && event.ctrlKey && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'z') {
+      && (event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'z') {
       event.preventDefault();
       this.editHistory.undoLastChange();
     }

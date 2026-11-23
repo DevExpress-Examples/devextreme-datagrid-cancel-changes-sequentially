@@ -62,7 +62,7 @@ const {
 
 function handleUndoKeyDown(event: KeyboardEvent): void {
   if (historyLength.value > 0
-    && event.ctrlKey && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'z') {
+    && (event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'z') {
     event.preventDefault();
     undoLastChange();
   }

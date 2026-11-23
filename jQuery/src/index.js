@@ -35,7 +35,7 @@ $(() => {
 
   function handleUndoKeyDown(event) {
     if (changeHistoryHelper.getHistoryLength() > 0
-      && event.ctrlKey && !event.shiftKey && !event.altKey
+      && (event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey
       && event.key?.toLowerCase() === 'z') {
       event.preventDefault();
       changeHistoryHelper.undoLastChange(grid);
