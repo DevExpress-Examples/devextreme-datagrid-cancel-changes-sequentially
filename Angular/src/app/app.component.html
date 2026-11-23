@@ -3,24 +3,28 @@
     [dataSource]="dataSource"
     [showBorders]="true"
     [repaintChangesOnly]="true"
-    (onInitialized)="onGridInitialized($event)"
-    (onOptionChanged)="onOptionChanged($event)"
-    (onSaved)="onSaved()"
   >
     <dxo-data-grid-editing
       mode="batch"
       [allowAdding]="true"
       [allowDeleting]="true"
       [allowUpdating]="true"
+      [changes]="editHistory.changes()"
+      (changesChange)="editHistory.onChangesChange($event)"
     ></dxo-data-grid-editing>
     <dxo-data-grid-toolbar>
       <dxi-data-grid-item name="addRowButton"></dxi-data-grid-item>
       <dxi-data-grid-item name="saveButton"></dxi-data-grid-item>
-      <dxi-data-grid-item
-        location="after"
-        widget="dxButton"
-        [options]="undoButtonOptions"
-      ></dxi-data-grid-item>
+      <dxi-data-grid-item location="after">
+        <dx-button
+          *dxTemplate
+          icon="revert"
+          hint="Undo the last change"
+          [elementAttr]="{ 'aria-label': 'Undo the last change' }"
+          [disabled]="editHistory.historyLength() === 0"
+          (onClick)="editHistory.undoLastChange()"
+        ></dx-button>
+      </dxi-data-grid-item>
       <dxi-data-grid-item
         name="revertButton"
         [options]="revertButtonOptions"
@@ -67,7 +71,7 @@
       <label id="max-undo-label" for="max-undo-steps">Maximum undo steps</label>
       <dx-number-box
         id="max-undo-steps"
-        [value]="defaultMaxUndoSteps"
+        [value]="maxUndoSteps()"
         [width]="120"
         [min]="0"
         [max]="1000"
@@ -84,7 +88,7 @@
         id="undo-types"
         [width]="250"
         [items]="undoTypes"
-        [value]="undoTypes"
+        [value]="selectedUndoTypes()"
         [showSelectionControls]="true"
         [showClearButton]="true"
         [inputAttr]="{ 'aria-labelledby': 'undo-types-label' }"

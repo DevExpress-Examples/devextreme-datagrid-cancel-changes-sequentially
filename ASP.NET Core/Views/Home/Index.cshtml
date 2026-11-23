@@ -174,7 +174,7 @@
 
     function handleUndoKeyDown(event) {
         if(editHistoryHelper.getHistoryLength() > 0
-            && event.ctrlKey && !event.shiftKey && !event.altKey
+            && (event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey
             && event.key?.toLowerCase() === "z") {
             event.preventDefault();
             editHistoryHelper.undoLastChange(grid);

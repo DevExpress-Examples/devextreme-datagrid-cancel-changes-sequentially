@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
 
 import 'devextreme/dist/css/dx.fluent.blue.light.css';
 import {
@@ -13,12 +13,10 @@ import {
 } from 'devextreme-vue/data-grid';
 import DxNumberBox from 'devextreme-vue/number-box';
 import DxTagBox from 'devextreme-vue/tag-box';
-import type dxDataGrid from 'devextreme/ui/data_grid';
-import type { InitializedEvent, OptionChangedEvent } from 'devextreme/ui/data_grid';
 import type { ValueChangedEvent as NumberBoxValueChangedEvent } from 'devextreme/ui/number_box';
 import type { ValueChangedEvent as TagBoxValueChangedEvent } from 'devextreme/ui/tag_box';
 import { createStore } from 'devextreme-aspnet-data-nojquery';
-import { DataChangeType, EditHistoryHelper } from '../edit-history-helper';
+import { DataChangeType, useEditHistory } from '../use-edit-history';
 
 const apiUrl = 'https://js.devexpress.com/Demos/Mvc/api/DataGridWebApi';
 const defaultMaxUndoSteps = 50;
@@ -47,27 +45,24 @@ const shipNameEditorOptions = { maxLength: 40 };
 const shipCountryEditorOptions = { maxLength: 15 };
 const revertButtonOptions = { icon: 'trash' };
 
-let gridInstance: dxDataGrid | undefined;
+const gridRef = shallowRef<InstanceType<typeof DxDataGrid>>();
 const maxUndoSteps = ref(defaultMaxUndoSteps);
 const selectedUndoTypes = ref<UndoTypes>([...undoTypes]);
-const historyLength = ref(0);
-const changeHistoryHelper = new EditHistoryHelper({
+const {
+  changes,
+  historyLength,
+  onChangesChange,
+  undoLastChange,
+  setMaxUndoSteps,
+  setUndoTypes,
+} = useEditHistory({
   maxUndoSteps: defaultMaxUndoSteps,
   undoTypes: [...undoTypes],
-  onHistoryChanged: (length) => {
-    historyLength.value = length;
-  },
 });
-
-function undoLastChange(): void {
-  if (gridInstance) {
-    changeHistoryHelper.undoLastChange(gridInstance);
-  }
-}
 
 function handleUndoKeyDown(event: KeyboardEvent): void {
   if (historyLength.value > 0
-    && event.ctrlKey && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'z') {
+    && (event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'z') {
     event.preventDefault();
     undoLastChange();
   }
@@ -76,31 +71,11 @@ function handleUndoKeyDown(event: KeyboardEvent): void {
 onMounted(() => document.addEventListener('keydown', handleUndoKeyDown));
 onBeforeUnmount(() => document.removeEventListener('keydown', handleUndoKeyDown));
 
-function onGridInitialized(event: InitializedEvent): void {
-  gridInstance = event.component;
-}
-
-function onGridOptionChanged(event: OptionChangedEvent): void {
-  if (event.fullName !== 'editing.changes' || !Array.isArray(event.value)
-    || changeHistoryHelper.isUndoInProgress()) {
-    return;
-  }
-  if (event.value.length === 0) {
-    changeHistoryHelper.resetHistory();
-  } else {
-    changeHistoryHelper.recordChanges(event.value);
-  }
-}
-
-function onGridSaved(): void {
-  changeHistoryHelper.resetHistory();
-}
-
 function handleMaxUndoStepsChanged(event: NumberBoxValueChangedEvent): void {
   const value = Number.isFinite(event.value) ? Math.floor(event.value) : defaultMaxUndoSteps;
   const limit = Math.max(0, Math.min(1000, value));
   maxUndoSteps.value = limit;
-  changeHistoryHelper.setMaxUndoSteps(limit);
+  setMaxUndoSteps(limit);
 }
 
 function handleUndoTypesChanged(event: TagBoxValueChangedEvent): void {
@@ -108,9 +83,9 @@ function handleUndoTypesChanged(event: TagBoxValueChangedEvent): void {
   const itemsAdded = newValue.some((item) => !event.previousValue.includes(item));
 
   selectedUndoTypes.value = newValue;
-  changeHistoryHelper.setUndoTypes(newValue);
+  setUndoTypes(newValue);
   if (itemsAdded) {
-    gridInstance?.cancelEditData();
+    gridRef.value?.instance?.cancelEditData();
   }
 }
 
@@ -125,19 +100,19 @@ const undoButtonOptions = computed(() => ({
 <template>
   <main class="demo-container">
     <DxDataGrid
+      ref="gridRef"
       class="orders-grid"
       :data-source="dataSource"
       :show-borders="true"
       :repaint-changes-only="true"
-      @initialized="onGridInitialized"
-      @option-changed="onGridOptionChanged"
-      @saved="onGridSaved"
     >
       <DxEditing
         mode="batch"
         :allow-adding="true"
         :allow-deleting="true"
         :allow-updating="true"
+        :changes="changes"
+        @update:changes="onChangesChange"
       />
       <DxToolbar>
         <DxItem name="addRowButton"/>

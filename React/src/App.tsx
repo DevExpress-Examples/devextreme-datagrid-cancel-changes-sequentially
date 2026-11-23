@@ -59,7 +59,7 @@ function App(): JSX.Element {
   useEffect(() => {
     function handleUndoKeyDown(event: KeyboardEvent): void {
       if (historyLength > 0
-        && event.ctrlKey && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'z') {
+        && (event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'z') {
         event.preventDefault();
         undoLastChange();
       }
