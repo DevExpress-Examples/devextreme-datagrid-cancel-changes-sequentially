@@ -6,7 +6,7 @@
 <!-- default badges end -->
 # DevExtreme DataGrid - Cancel Changes Sequentially
 
-The DevExtreme [DataGrid](https://js.devexpress.com/jQuery/Documentation/Guide/UI_Components/DataGrid/Overview/) accumulates unsaved changes in the [batch edit mode](https://js.devexpress.com/jQuery/Documentation/Guide/UI_Components/DataGrid/Editing/#User_Interaction/Batch_Mode). The built-in **Discard changes** button cancels all pending changes at once. This example implements a custom undo algorithm that discards changes sequentially (one by one). To revert edits, users can click a custom button in the DataGrid toolbar or press <kbd>Ctrl</kbd>+<kbd>Z</kbd>.
+The DevExtreme [DataGrid](https://js.devexpress.com/jQuery/Documentation/Guide/UI_Components/DataGrid/Overview/) accumulates unsaved changes when using [batch edit mode](https://js.devexpress.com/jQuery/Documentation/Guide/UI_Components/DataGrid/Editing/#User_Interaction/Batch_Mode). The built-in **Discard changes** button cancels all pending changes simultaneously. This example implements a custom undo algorithm that discards changes sequentially (one by one). To revert edits, users can click a custom button in the DataGrid toolbar or press <kbd>Ctrl</kbd>+<kbd>Z</kbd>.
 
 ![DevExtreme DataGrid with a custom undo button and an options panel](images/datagrid-undo-changes.png)
 
@@ -152,9 +152,9 @@ document.addEventListener('keydown', handleUndoKeyDown, true);
 Pass `maxUndoSteps` and `undoTypes` options to the `EditHistoryHelper` constructor to specify initial settings. Editors in the **Options** panel call the following helper methods to apply new values:
 
 - `setMaxUndoSteps`: Sets the maximum number of steps in history. If history exceeds the new limit, the method removes the oldest steps.
-- `setUndoTypes`: Sets change types that users can undo and removes steps of other types from history.
+- `setUndoTypes`: Sets change types that users can undo and removes other step types from history.
 
-When a user adds a change type, this example also calls the DataGrid [`cancelEditData()`](https://js.devexpress.com/jQuery/Documentation/ApiReference/UI_Components/dxDataGrid/Methods/#cancelEditData) method to discard all pending changes. This call ensures that the application skips or restores edits of each type consistently.
+When a user adds a change type, this example also calls the DataGrid [`cancelEditData()`](https://js.devexpress.com/jQuery/Documentation/ApiReference/UI_Components/dxDataGrid/Methods/#cancelEditData) method to discard all pending changes. This call ensures that the application skips or restores edits for each type consistently.
 
 ## Files to Review
 
