@@ -161,13 +161,13 @@ When a user adds a change type, this example also calls the DataGrid [`cancelEdi
 - **Angular**
     - [app.component.html](Angular/src/app/app.component.html)
     - [app.component.ts](Angular/src/app/app.component.ts)
-    - [edit-history-helper.ts](Angular/src/app/edit-history-helper.ts)
+    - [edit-history.service.ts](Angular/src/app/edit-history.service.ts)
 - **React**
     - [App.tsx](React/src/App.tsx)
     - [edit-history-helper.ts](React/src/edit-history-helper.ts)
 - **Vue**
     - [HomeContent.vue](Vue/src/components/HomeContent.vue)
-    - [edit-history-helper.ts](Vue/src/edit-history-helper.ts)
+    - [use-edit-history.ts](Vue/src/use-edit-history.ts)
 - **jQuery**
     - [index.html](jQuery/src/index.html)
     - [index.js](jQuery/src/index.js)
